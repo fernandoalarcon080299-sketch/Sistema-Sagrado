@@ -553,15 +553,19 @@
             actualizarDashboard();
         }
 
-        // SPA NAVIGATION
+        // SPA NAVIGATION (CORREGIDA CON IDS RESTABLECIDOS)
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('bg-brand-800', 'font-bold'));
             
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.getElementById(`btn-${tabId}`).classList.add('bg-brand-800', 'font-bold');
+            const tabContent = document.getElementById(`tab-${tabId}`);
+            const btnNav = document.getElementById(`btn-${tabId}`);
+
+            if (tabContent) tabContent.classList.remove('hidden');
+            if (btnNav) btnNav.classList.add('bg-brand-800', 'font-bold');
             
             actualizarTodoEnPantalla();
+            lucide.createIcons();
         }
 
         function showToast(msg) {
@@ -896,106 +900,4 @@
             });
         }
 
-        // ASISTENCIA POR SALÓN Y FECHA
-        function renderAsistenciaSalon() {
-            const grado = document.getElementById('asist-grado').value;
-            const fecha = document.getElementById('asist-fecha').value;
-            const tbody = document.getElementById('tabla-asistencia-salon');
-            const resumenDiv = document.getElementById('resumen-asistencia-salon');
-
-            tbody.innerHTML = '';
-
-            if (!fecha) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">Seleccione una fecha válida.</td></tr>`;
-                return;
-            }
-
-            const alumnosSal = Object.keys(db.alumnos)
-                .map(k => db.alumnos[k])
-                .filter(a => a.grado === grado);
-
-            if (alumnosSal.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-400">No hay alumnos en este salón.</td></tr>`;
-                resumenDiv.innerText = '';
-                return;
-            }
-
-            let presentes = 0;
-
-            alumnosSal.forEach(a => {
-                const asistKey = `${fecha}_${a.dni}`;
-                const reg = db.asistencias[asistKey] || { estado: 'Presente' };
-
-                if (reg.estado === 'Presente') presentes++;
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-3 font-mono text-xs">${a.dni}</td>
-                        <td class="p-3 font-medium">${a.apellidos}, ${a.nombres}</td>
-                        <td class="p-3">
-                            <select onchange="cambiarAsistenciaAlumno('${a.dni}', this.value)" class="p-1 border rounded text-xs font-semibold ${reg.estado === 'Presente' ? 'bg-green-100 text-green-800' : reg.estado === 'Tardanza' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
-                                <option value="Presente" ${reg.estado === 'Presente' ? 'selected' : ''}>Presente</option>
-                                <option value="Tardanza" ${reg.estado === 'Tardanza' ? 'selected' : ''}>Tardanza</option>
-                                <option value="Falta" ${reg.estado === 'Falta' ? 'selected' : ''}>Falta</option>
-                                <option value="Justificado" ${reg.estado === 'Justificado' ? 'selected' : ''}>Justificado</option>
-                            </select>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            const pct = Math.round((presentes / alumnosSal.length) * 100);
-            resumenDiv.innerText = `Asistencia del Salón: ${presentes}/${alumnosSal.length} (${pct}%)`;
-        }
-
-        function cambiarAsistenciaAlumno(dni, nuevoEstado) {
-            const fecha = document.getElementById('asist-fecha').value;
-            if (!fecha) return;
-
-            const asistKey = `${fecha}_${dni}`;
-            db.asistencias[asistKey] = { fecha, dni, estado: nuevoEstado };
-            guardarNodoCloud('asistencias');
-            showToast("Asistencia actualizada en la nube");
-        }
-
-        function marcarTodosPresentes() {
-            const grado = document.getElementById('asist-grado').value;
-            const fecha = document.getElementById('asist-fecha').value;
-
-            if (!fecha) return;
-
-            const alumnosSal = Object.keys(db.alumnos)
-                .map(k => db.alumnos[k])
-                .filter(a => a.grado === grado);
-
-            alumnosSal.forEach(a => {
-                const asistKey = `${fecha}_${a.dni}`;
-                db.asistencias[asistKey] = { fecha, dni: a.dni, estado: 'Presente' };
-            });
-
-            guardarNodoCloud('asistencias');
-            showToast("Marcados todos como Presentes");
-        }
-
-        // POBLAR SELECTS AUTOMÁTICAMENTE
-        function poblarSelects() {
-            const arrAlumnos = Object.keys(db.alumnos).map(k => db.alumnos[k]);
-            const arrCursos = Object.keys(db.cursos).map(k => db.cursos[k]);
-
-            const optAlumnos = arrAlumnos.map(a => `<option value="${a.dni}">${a.apellidos}, ${a.nombres} (${a.grado})</option>`).join('');
-            const optCursos = arrCursos.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
-
-            document.getElementById('mat-alumno').innerHTML = optAlumnos;
-            document.getElementById('mat-curso').innerHTML = optCursos;
-            document.getElementById('nota-alumno').innerHTML = optAlumnos;
-
-            actualizarCursosAlumnoNota();
-        }
-
-        // ACTUALIZAR DASHBOARD
-        function actualizarDashboard() {
-            const totalAlumnos = Object.keys(db.alumnos).length;
-            const totalCursos = Object.keys(db.cursos).length;
-
-            document.getElementById('dash-alumnos').innerText = totalAlumnos;
-            document
+        // ASISTENCIA POR SALÓN Y
